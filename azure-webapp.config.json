@@ -1,0 +1,57 @@
+{
+  "name": "tender-tracking-app",
+  "resourceId": "/subscriptions/ae32dc82-f9f4-4d8d-96a2-7906667ea6d8/resourceGroups/tender-tracking-rg/providers/Microsoft.Web/sites/tender-tracking-app",
+  "resourceGroup": "tender-tracking-rg",
+  "serverfarms": {
+    "name": "tender-tracking-plan",
+    "sku": {
+      "name": "B1",
+      "tier": "Basic"
+    }
+  },
+  "configuration": {
+    "nodeVersion": "20.x",
+    "startupCommand": "npm run start",
+    "healthCheck": {
+      "path": "/api/health",
+      "interval": 60,
+      "timeout": 30,
+      "unhealthyThreshold": 3,
+      "healthyThreshold": 2
+    },
+    "appSettings": [
+      {
+        "name": "PORT",
+        "value": "8080"
+      },
+      {
+        "name": "SCM_DO_BUILD_DURING_DEPLOYMENT",
+        "value": "true"
+      },
+      {
+        "name": "WEBSITE_NODE_DEFAULT_VERSION",
+        "value": "20.x"
+      },
+      {
+        "name": "NODE_ENV",
+        "value": "production"
+      },
+      {
+        "name": "VITE_AZURE_DB_HOST",
+        "value": "${VITE_AZURE_DB_HOST}"
+      },
+      {
+        "name": "VITE_AZURE_DB_NAME",
+        "value": "${VITE_AZURE_DB_NAME}"
+      },
+      {
+        "name": "VITE_AZURE_DB_USER",
+        "value": "${VITE_AZURE_DB_USER}"
+      },
+      {
+        "name": "VITE_AZURE_DB_PASSWORD",
+        "value": "${VITE_AZURE_DB_PASSWORD}"
+      }
+    ]
+  }
+}

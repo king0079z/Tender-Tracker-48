@@ -1,0 +1,14 @@
+name: tender-tracking
+services:
+- name: web
+  github:
+    branch: main
+    deploy_on_push: true
+  build_command: npm run build
+  run_command: npm start
+  environment_slug: node-js
+  env:
+    - key: VITE_SUPABASE_URL
+      value: ${VITE_SUPABASE_URL}
+    - key: VITE_SUPABASE_ANON_KEY 
+      value: ${VITE_SUPABASE_ANON_KEY}

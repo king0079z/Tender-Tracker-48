@@ -1,0 +1,177 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "appName": {
+      "type": "string",
+      "defaultValue": "tender-tracking",
+      "metadata": {
+        "description": "Base name for all resources"
+      }
+    },
+    "location": {
+      "type": "string",
+      "defaultValue": "[resourceGroup().location]",
+      "metadata": {
+        "description": "Location for all resources"
+      }
+    },
+    "administratorLogin": {
+      "type": "string",
+      "metadata": {
+        "description": "Database administrator login name"
+      }
+    },
+    "administratorLoginPassword": {
+      "type": "securestring",
+      "metadata": {
+        "description": "Database administrator password"
+      }
+    },
+    "skuName": {
+      "type": "string",
+      "defaultValue": "B2",
+      "metadata": {
+        "description": "App Service Plan SKU"
+      }
+    },
+    "skuCapacity": {
+      "type": "int",
+      "defaultValue": 2,
+      "metadata": {
+        "description": "Number of instances"
+      }
+    }
+  },
+  "variables": {
+    "hostingPlanName": "[format('{0}-plan', parameters('appName'))]",
+    "webAppName": "[format('{0}-app', parameters('appName'))]",
+    "databaseServerName": "[format('{0}-dbserver', parameters('appName'))]",
+    "databaseName": "[format('{0}-db', parameters('appName'))]"
+  },
+  "resources": [
+    {
+      "type": "Microsoft.Web/serverfarms",
+      "apiVersion": "2021-02-01",
+      "name": "[variables('hostingPlanName')]",
+      "location": "[parameters('location')]",
+      "sku": {
+        "name": "[parameters('skuName')]",
+        "capacity": "[parameters('skuCapacity')]"
+      },
+      "kind": "linux",
+      "properties": {
+        "reserved": true,
+        "zoneRedundant": true
+      }
+    },
+    {
+      "type": "Microsoft.Web/sites",
+      "apiVersion": "2021-02-01",
+      "name": "[variables('webAppName')]",
+      "location": "[parameters('location')]",
+      "dependsOn": [
+        "[resourceId('Microsoft.Web/serverfarms', variables('hostingPlanName'))]"
+      ],
+      "properties": {
+        "serverFarmId": "[resourceId('Microsoft.Web/serverfarms', variables('hostingPlanName'))]",
+        "siteConfig": {
+          "linuxFxVersion": "NODE|20-lts",
+          "nodeVersion": "20-lts",
+          "alwaysOn": true,
+          "http20Enabled": true,
+          "minTlsVersion": "1.2",
+          "ftpsState": "FtpsOnly",
+          "healthCheckPath": "/api/health",
+          "numberOfWorkers": "[parameters('skuCapacity')]",
+          "appSettings": [
+            {
+              "name": "WEBSITE_NODE_DEFAULT_VERSION",
+              "value": "20-lts"
+            },
+            {
+              "name": "VITE_AZURE_DB_HOST",
+              "value": "[format('{0}.postgres.database.azure.com', variables('databaseServerName'))]"
+            },
+            {
+              "name": "VITE_AZURE_DB_NAME",
+              "value": "[variables('databaseName')]"
+            },
+            {
+              "name": "VITE_AZURE_DB_USER",
+              "value": "[parameters('administratorLogin')]"
+            },
+            {
+              "name": "VITE_AZURE_DB_PASSWORD",
+              "value": "[parameters('administratorLoginPassword')]"
+            },
+            {
+              "name": "SCM_DO_BUILD_DURING_DEPLOYMENT",
+              "value": "true"
+            },
+            {
+              "name": "WEBSITE_RUN_FROM_PACKAGE",
+              "value": "1"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "type": "Microsoft.DBforPostgreSQL/flexibleServers",
+      "apiVersion": "2021-06-01",
+      "name": "[variables('databaseServerName')]",
+      "location": "[parameters('location')]",
+      "sku": {
+        "name": "Standard_B1ms",
+        "tier": "Burstable"
+      },
+      "properties": {
+        "version": "14",
+        "administratorLogin": "[parameters('administratorLogin')]",
+        "administratorLoginPassword": "[parameters('administratorLoginPassword')]",
+        "storage": {
+          "storageSizeGB": 32
+        },
+        "backup": {
+          "backupRetentionDays": 7,
+          "geoRedundantBackup": "Disabled"
+        },
+        "network": {
+          "delegatedSubnetResourceId": "",
+          "privateDnsZoneArmResourceId": ""
+        }
+      }
+    },
+    {
+      "type": "Microsoft.DBforPostgreSQL/flexibleServers/databases",
+      "apiVersion": "2021-06-01",
+      "name": "[format('{0}/{1}', variables('databaseServerName'), variables('databaseName'))]",
+      "dependsOn": [
+        "[resourceId('Microsoft.DBforPostgreSQL/flexibleServers', variables('databaseServerName'))]"
+      ]
+    },
+    {
+      "type": "Microsoft.DBforPostgreSQL/flexibleServers/firewallRules",
+      "apiVersion": "2021-06-01",
+      "name": "[format('{0}/AllowAzureServices', variables('databaseServerName'))]",
+      "dependsOn": [
+        "[resourceId('Microsoft.DBforPostgreSQL/flexibleServers', variables('databaseServerName'))]"
+      ],
+      "properties": {
+        "startIpAddress": "0.0.0.0",
+        "endIpAddress": "255.255.255.255"
+      }
+    }
+  ],
+  "outputs": {
+    "webAppUrl": {
+      "type": "string",
+      "value": "[format('https://{0}.azurewebsites.net', variables('webAppName'))]"
+    },
+    "databaseServer": {
+      "type": "string",
+      "value": "[format('{0}.postgres.database.azure.com', variables('databaseServerName'))]"
+    }
+  }
+}

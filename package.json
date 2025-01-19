@@ -1,0 +1,37 @@
+{
+  "name": "tender-track",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "preview": "vite preview",
+    "start": "node server.js",
+    "test:db": "node test-db-connection.js"
+  },
+  "dependencies": {
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "lucide-react": "^0.344.0",
+    "express": "^4.18.2",
+    "compression": "^1.7.4",
+    "pg": "^8.11.3",
+    "pg-connection-string": "^2.6.2",
+    "dotenv": "^16.4.1"
+  },
+  "devDependencies": {
+    "@types/pg": "^8.11.0",
+    "@types/react": "^18.3.5",
+    "@types/react-dom": "^18.3.0",
+    "@vitejs/plugin-react": "^4.3.1",
+    "autoprefixer": "^10.4.18",
+    "postcss": "^8.4.35",
+    "tailwindcss": "^3.4.1",
+    "typescript": "^5.5.3",
+    "vite": "^5.4.2"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  }
+}

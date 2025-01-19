@@ -1,0 +1,62 @@
+name: Azure Deployment
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Azure Login
+        uses: azure/login@v1
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Deploy ARM Template
+        uses: azure/arm-deploy@v1
+        with:
+          subscriptionId: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+          resourceGroupName: ${{ secrets.AZURE_RG }}
+          template: ./azure/azuredeploy.json
+          parameters: ./azure/parameters.json
+          parameters: administratorLoginPassword=${{ secrets.DB_ADMIN_PASSWORD }}
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '20.x'
+          cache: 'npm'
+
+      - name: Install Dependencies
+        run: npm ci
+
+      - name: Build Application
+        run: npm run build
+        env:
+          VITE_AZURE_DB_HOST: ${{ secrets.VITE_AZURE_DB_HOST }}
+          VITE_AZURE_DB_NAME: ${{ secrets.VITE_AZURE_DB_NAME }}
+          VITE_AZURE_DB_USER: ${{ secrets.VITE_AZURE_DB_USER }}
+          VITE_AZURE_DB_PASSWORD: ${{ secrets.VITE_AZURE_DB_PASSWORD }}
+
+      - name: Package Application
+        run: |
+          cp package*.json dist/
+          cp server.js dist/
+          cd dist
+          npm ci --production
+          cd ..
+          zip -r release.zip ./dist/*
+
+      - name: Deploy to Azure Web App
+        uses: azure/webapps-deploy@v2
+        with:
+          app-name: 'tender-tracking-app'
+          package: release.zip
+          startup-command: 'node server.js'
+          resource-group-name: 'tender-tracking-rg'
